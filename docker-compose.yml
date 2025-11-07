@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8888:8888"
+    volumes:
+      - /tmp:/tmp
+      - ./demo.ipynb:/app/demo.ipynb
+    command: uv run jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+    environment:
+      - EARTHDATA_USERNAME=${EARTHDATA_USERNAME}
+      - EARTHDATA_PASSWORD=${EARTHDATA_PASSWORD}
+      - JUPYTER_ENABLE_LAB=yes
