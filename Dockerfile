@@ -30,13 +30,44 @@ USER ${NB_USER}
 
 # Sync the project
 RUN --mount=type=cache,target=/root/.cache/uv \
-  uv sync --locked 
+  uv sync --locked
 
 ENV PATH="${HOME}/.venv/bin:$PATH"
 
-RUN cat <<EOT > ~/.netrc
-  machine urs.earthdata.nasa.gov
-  login ${EARTHDATA_USERNAME}
-  password ${EARTHDATA_PASSWORD}
+# Create startup script to configure environment at runtime
+RUN cat <<'EOF' > ${HOME}/start.sh
+#!/bin/sh
+# Create .netrc if credentials are provided
+if [ -n "${EARTHDATA_USERNAME}" ] && [ -n "${EARTHDATA_PASSWORD}" ]; then
+  cat <<EOT > ~/.netrc
+machine urs.earthdata.nasa.gov
+login ${EARTHDATA_USERNAME}
+password ${EARTHDATA_PASSWORD}
 EOT
+  chmod 600 ~/.netrc
+fi
+
+# Start jupyter - this works for both local and JupyterHub contexts
+exec "$@"
+EOF
+
+RUN chmod +x ${HOME}/start.sh
+
+# Configure Jupyter to work with JupyterHub
+RUN mkdir -p ${HOME}/.jupyter && \
+  cat <<EOF > ${HOME}/.jupyter/jupyter_server_config.py
+# Disable authentication for JupyterHub compatibility
+c.ServerApp.token = ''
+c.ServerApp.password = ''
+c.ServerApp.disable_check_xsrf = False
+c.ServerApp.allow_remote_access = True
+c.ServerApp.allow_origin = '*'
+EOF
+
+USER root
+RUN chown -R ${NB_UID}:${NB_UID} ${HOME}
+USER ${NB_USER}
+
+ENTRYPOINT ["/home/jovyan/start.sh"]
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser"]
 

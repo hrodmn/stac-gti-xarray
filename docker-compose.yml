@@ -5,8 +5,7 @@ services:
       - "8888:8888"
     volumes:
       - /tmp:/tmp
-      - ./demo.ipynb:/home/joyvan/demo.ipynb
-    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+      - ./demo.ipynb:/home/jovyan/demo.ipynb
     environment:
       - EARTHDATA_USERNAME=${EARTHDATA_USERNAME}
       - EARTHDATA_PASSWORD=${EARTHDATA_PASSWORD}
