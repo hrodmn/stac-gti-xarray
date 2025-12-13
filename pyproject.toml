@@ -6,9 +6,11 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "dask>=2025.11.0",
+    "jupyterhub>=5.4.3",
     "jupyterlab>=4.4.10",
     "matplotlib>=3.10.7",
-    "rasterio>=1.4.3",
+    "notebook>=7.4.7",
+    "rasterio==1.4.4",
     "rio-tiler>=7.9.2",
     "rioxarray>=0.20.0",
     "rustac>=0.8.4",
