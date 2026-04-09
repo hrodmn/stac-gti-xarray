@@ -1,1 +1,10 @@
 /.venv
+/.git
+CLAUDE.md
+ARCHITECTURE.md
+tests/
+.github/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-ARG GDAL_REPO=https://github.com/hrodmn/gdal.git
-ARG GDAL_REF=fix/gti-user-crs
+ARG GDAL_REPO=https://github.com/osgeo/gdal.git
+ARG GDAL_REF=master
 
 # ── Stage 1: build minimal GDAL from source ───────────────────────────────────
 # Requires Arrow/Parquet for the OGR Parquet (geoparquet) driver, which is
@@ -61,32 +61,25 @@ RUN mkdir -p /opt/arrow-libs && \
         -o -name 'libutf8proc*.so*' \) \
         -exec cp -P {} /opt/arrow-libs/ \;
 
-# ── Stage 2: Python environment ───────────────────────────────────────────────
-FROM ubuntu:24.04
+# ── Stage 2: build Python environment ─────────────────────────────────────────
+# Separate stage so build tools (gcc, -dev headers) don't land in the runtime
+# image. The compiled .venv is copied to the final stage below.
+FROM ubuntu:24.04 AS python-builder
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.6 /uv /uvx /bin/
 COPY --from=gdal-builder /opt/gdal /opt/gdal
+COPY --from=gdal-builder /opt/arrow-libs/ /usr/lib/x86_64-linux-gnu/
 
-# Runtime deps for GDAL + build tools for compiling rasterio from source.
-# Arrow/Parquet headers are not needed here — rasterio doesn't use Arrow.
-# Copy only the shared libraries that libgdal.so links against at runtime.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ make \
     libproj-dev \
     libsqlite3-dev \
     libcurl4-openssl-dev \
     libtiff-dev \
-    libxml2 \
-    libabsl20220623t64 \
-    libprotobuf32t64 \
-    libsnappy1v5 \
-    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=gdal-builder /opt/arrow-libs/ /usr/lib/x86_64-linux-gnu/
 RUN ldconfig
 
-# Point rasterio's build at the custom GDAL and ensure its libs are found at runtime
 ENV GDAL_CONFIG=/opt/gdal/bin/gdal-config
 ENV LD_LIBRARY_PATH=/opt/gdal/lib64:/opt/gdal/lib
 
@@ -101,6 +94,35 @@ ADD . /app
 
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --locked
+
+# ── Stage 3: runtime image ────────────────────────────────────────────────────
+FROM ubuntu:24.04
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.6 /uv /uvx /bin/
+COPY --from=gdal-builder /opt/gdal /opt/gdal
+COPY --from=gdal-builder /opt/arrow-libs/ /usr/lib/x86_64-linux-gnu/
+COPY --from=python-builder /root/.local/share/uv/python /root/.local/share/uv/python
+COPY --from=python-builder /app /app
+
+# Runtime-only packages (no gcc, no -dev headers)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libproj25 \
+    libsqlite3-0 \
+    libcurl4t64 \
+    libtiff6 \
+    libxml2 \
+    libabsl20220623t64 \
+    libprotobuf32t64 \
+    libsnappy1v5 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ldconfig
+
+ENV GDAL_CONFIG=/opt/gdal/bin/gdal-config
+ENV LD_LIBRARY_PATH=/opt/gdal/lib64:/opt/gdal/lib
+
+WORKDIR /app
 
 RUN cat <<EOT > ~/.netrc
   machine urs.earthdata.nasa.gov
