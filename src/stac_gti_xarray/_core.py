@@ -279,6 +279,7 @@ async def _open_async(
         "datetime": _normalize_datetime(datetime),
         "bbox": bbox_4326,
         "compression": None,
+        "limit": 100,
     }
     if sort_by is not None:
         search_kwargs["sortby"] = f"properties.{sort_by}"
@@ -357,7 +358,7 @@ async def _open_async(
     return da
 
 
-def open(
+async def open(
     href: str,
     collections: list[str],
     datetime: str,
@@ -401,7 +402,7 @@ def open(
 
     Example:
         >>> import stac_gti_xarray
-        >>> da = stac_gti_xarray.open(
+        >>> da = await stac_gti_xarray.open(
         ...     href="https://earth-search.aws.element84.com/v1",
         ...     collections=["sentinel-2-c1-l2a"],
         ...     datetime="2025-06-01/2025-06-05",
@@ -412,17 +413,15 @@ def open(
         ...     sort_by="eo:cloud_cover",
         ... )
     """
-    return asyncio.run(
-        _open_async(
-            href=href,
-            collections=collections,
-            datetime=datetime,
-            bbox=bbox,
-            crs=crs,
-            resolution=resolution,
-            bands=bands,
-            chunks=chunks,
-            sort_by=sort_by,
-            stac_timeout=stac_timeout,
-        )
+    return await _open_async(
+        href=href,
+        collections=collections,
+        datetime=datetime,
+        bbox=bbox,
+        crs=crs,
+        resolution=resolution,
+        bands=bands,
+        chunks=chunks,
+        sort_by=sort_by,
+        stac_timeout=stac_timeout,
     )

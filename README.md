@@ -16,7 +16,7 @@ No pixel data is read until the array is materialized.
 
 rasterio's PyPI wheels bundle their own `libgdal.so` but that build does not include the GTI raster driver or Parquet support. You need rasterio built against a GDAL that includes both.
 
-The included `Dockerfile` and `docker-compose.yml` handle this by building rasterio from source against the official GDAL Alpine image:
+The included `Dockerfile` and `docker-compose.yml` handle this by building rasterio from source against the latest GDAL Alpine image:
 
 ```bash
 docker compose up

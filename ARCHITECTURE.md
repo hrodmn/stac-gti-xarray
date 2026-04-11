@@ -55,9 +55,6 @@ the OGR Arrow/Parquet driver needed to read geoparquet files directly with GTI. 
 raster driver is present in GDAL >= 3.7 (which rasterio 1.4+ ships), but geoparquet
 support is missing.
 
-We also use the `hrodmn/gdal` fork (`fix/gti-user-crs` branch), which contains a patch
-for GTI's user-supplied CRS handling that has not yet been merged upstream.
-
 ### Custom GDAL cmake flags
 
 ```

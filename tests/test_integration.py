@@ -22,9 +22,9 @@ SMALL_BBOX = (-150000.0, 2500000.0, -100000.0, 2550000.0)
 SMALL_BBOX_WGS84 = (-97.93, 45.47, -97.28, 45.93)
 
 
-def test_open_returns_correct_structure(stac_cassette) -> None:
+async def test_open_returns_correct_structure(stac_cassette) -> None:
     """Opening a two-day window should yield a (time=2, band=3, y, x) DataArray."""
-    da = stac_gti_xarray.open(
+    da = await stac_gti_xarray.open(
         href=EARTH_SEARCH_URL,
         collections=["sentinel-2-c1-l2a"],
         datetime="2025-06-10/2025-06-11",
@@ -42,9 +42,9 @@ def test_open_returns_correct_structure(stac_cassette) -> None:
     assert da.sizes["time"] >= 1
 
 
-def test_open_without_crs_and_resolution(stac_cassette) -> None:
+async def test_open_without_crs_and_resolution(stac_cassette) -> None:
     """Omitting crs/resolution should return a valid DataArray with native projection."""
-    da = stac_gti_xarray.open(
+    da = await stac_gti_xarray.open(
         href=EARTH_SEARCH_URL,
         collections=["sentinel-2-c1-l2a"],
         datetime="2025-06-10/2025-06-11",
@@ -57,9 +57,9 @@ def test_open_without_crs_and_resolution(stac_cassette) -> None:
     assert "band" in da.dims
 
 
-def test_open_band_autodiscovery(stac_cassette) -> None:
+async def test_open_band_autodiscovery(stac_cassette) -> None:
     """When bands=None, all raster assets should be auto-discovered."""
-    da = stac_gti_xarray.open(
+    da = await stac_gti_xarray.open(
         href=EARTH_SEARCH_URL,
         collections=["sentinel-2-c1-l2a"],
         datetime="2025-06-10/2025-06-10",
@@ -72,10 +72,10 @@ def test_open_band_autodiscovery(stac_cassette) -> None:
     assert da.sizes["band"] > 1
 
 
-def test_open_invalid_band_raises(stac_cassette) -> None:
+async def test_open_invalid_band_raises(stac_cassette) -> None:
     """Requesting a band that does not exist should raise ValueError."""
     with pytest.raises(ValueError, match="not found"):
-        stac_gti_xarray.open(
+        await stac_gti_xarray.open(
             href=EARTH_SEARCH_URL,
             collections=["sentinel-2-c1-l2a"],
             datetime="2025-06-10/2025-06-10",
@@ -86,11 +86,11 @@ def test_open_invalid_band_raises(stac_cassette) -> None:
         )
 
 
-def test_open_data_is_lazy(stac_cassette) -> None:
+async def test_open_data_is_lazy(stac_cassette) -> None:
     """The returned DataArray should be dask-backed before compute is called."""
     import dask.array as da_module
 
-    da = stac_gti_xarray.open(
+    da = await stac_gti_xarray.open(
         href=EARTH_SEARCH_URL,
         collections=["sentinel-2-c1-l2a"],
         datetime="2025-06-10/2025-06-10",
@@ -106,9 +106,9 @@ def test_open_data_is_lazy(stac_cassette) -> None:
 
 @pytest.mark.integration
 @pytest.mark.enable_socket
-def test_open_live_api() -> None:
+async def test_open_live_api() -> None:
     """Smoke test against the live Earth Search API (requires network)."""
-    da = stac_gti_xarray.open(
+    da = await stac_gti_xarray.open(
         href=EARTH_SEARCH_URL,
         collections=["sentinel-2-c1-l2a"],
         datetime="2025-06-10/2025-06-10",
